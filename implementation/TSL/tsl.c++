@@ -17,21 +17,24 @@ bool htr_02;
 bool htr_03;
 bool htr_04;
 string period;
-void inicialize(){
+void check_period(){
+    auto now = std::chrono::steady_clock::now();
+    auto duration = now.time_since_epoch();
 
-    srand(time(0));
-    
-    therm_01 = (rand() % 13)-5;
-    therm_02 = (rand() % 13)-5;
-    therm_03 = (rand() % 13)-5;
-    therm_04 = (rand() % 13)-5;
-    htr_01 = false;
-    htr_02 = false;
-    htr_03 = false;
-    htr_04 = false;
-    period = "normal";
-    //cout << therm_01 << " " << therm_02 << " " << therm_03 << " " << therm_04 << endl;
+    auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+
+    uint8_t lowerBits = static_cast<uint8_t>(millis & 0xFF);
+    if ((lowerBits >= 0x00 && lowerBits <= 0x1F) || (lowerBits >= 0x60 && lowerBits <= 0xFF)) {
+        period = "normal";
+    }
+    if (lowerBits >= 0x20 && lowerBits <= 0x3F ) {
+        period = "eclipse";
+    }
+    if (lowerBits >= 0x40 && lowerBits <= 0x5F ) {
+        period = "SUN_EXPOSURE";
+    }
 }
+
 void htr01(bool b){
     htr_01=b;
 }
@@ -137,23 +140,7 @@ void write(){
     << period << endl;
     file.close();
 }
-void check_period(){
-    auto now = std::chrono::steady_clock::now();
-    auto duration = now.time_since_epoch();
 
-    auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-
-    uint8_t lowerBits = static_cast<uint8_t>(millis & 0xFF);
-    if ((lowerBits >= 0x00 && lowerBits <= 0x1F) || (lowerBits >= 0x60 && lowerBits <= 0xFF)) {
-        period = "normal";
-    }
-    if (lowerBits >= 0x20 && lowerBits <= 0x3F ) {
-        period = "eclipse";
-    }
-    if (lowerBits >= 0x40 && lowerBits <= 0x5F ) {
-        period = "SUN_EXPOSURE";
-    }
-}
 void read(){
     ifstream file("status.txt");
         
@@ -172,7 +159,32 @@ void read(){
     file.close();
 
 }
-int main(){
+void inicialize(){
+
+    srand(time(0));
+    
+    therm_01 = (rand() % 13)-5;
+    therm_02 = (rand() % 13)-5;
+    therm_03 = (rand() % 13)-5;
+    therm_04 = (rand() % 13)-5;
+    htr_01 = false;
+    htr_02 = false;
+    htr_03 = false;
+    htr_04 = false;
+    period = "normal";
+    //cout << therm_01 << " " << therm_02 << " " << therm_03 << " " << therm_04 << endl;
+    
+    const int frequency = 5; 
+    const std::chrono::milliseconds interval(1000 / frequency); 
+    while (true) {
+        check_period();
+        cycle();
+        //cout << therm_01 << " " << therm_02 << " " << therm_03 << " " << therm_04 << endl << htr_01 << " " << htr_02 << " " << htr_03 << " " << htr_04 << endl << period << endl;
+
+        this_thread::sleep_for(interval);
+    }
+}
+/*int main(){
     inicialize();
 
     const int frequency = 5; 
@@ -187,3 +199,4 @@ int main(){
     //cout << therm_01 << " " << therm_02 << " " << therm_03 << " " << therm_04 << endl << htr_01 << " " << htr_02 << " " << htr_03 << " " << htr_04 << endl << period << endl;
     return 0;
 }
+*/
