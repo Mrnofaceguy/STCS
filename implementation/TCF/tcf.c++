@@ -7,7 +7,7 @@
 #include <chrono>
 #include <thread>
 #include <iomanip>
-#include "C:\Users\Mrnofaceguy\Documents\GitHub\STCS2\implementation\TSL\tsl.c++"
+#include "implementation/TSL/tsl.c++"
 
 int frequency=5;
 int Kp;
