@@ -12,12 +12,12 @@ bool controlEnabled = false;
 // Function to render the GUI
 void render_gui() {
     ImGui::Begin("Temperature Control System");
-
+    int minTemp,maxTemp;
     for (int i = 0; i < 4; ++i) {
         ImGui::Text("Device %d", i + 1);
         ImGui::Text("Current Temp: %.1f", i == 0 ? therm_01 : i == 1 ? therm_02 : i == 2 ? therm_03 : therm_04);
-        ImGui::SliderFloat(("Min Temp " + std::to_string(i + 1)).c_str(), &minTemp[i], -30.0c, 30.0c);
-        ImGui::SliderFloat(("Max Temp " + std::to_string(i + 1)).c_str(), &maxTemp[i], -30.0c, 30.0c);
+        ImGui::SliderInt(("Min Temp " + std::to_string(i + 1)).c_str(), &minTemp[i], -30, 30);
+        ImGui::SliderInt(("Max Temp " + std::to_string(i + 1)).c_str(), &maxTemp[i], -30, 30);
         ImGui::Separator();
     }
 
