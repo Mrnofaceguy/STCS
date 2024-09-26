@@ -1,13 +1,12 @@
 #include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
+#include <GLFW/glfw3.h>
+#include <GL/glut.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-
+#include "implementation/TSL/tsl.c++"
+#include "implementation/TCF/tcf.c++"
 // Simulated device temperatures
-float therm_01 = 20.0f, therm_02 = 25.0f, therm_03 = 18.0f, therm_04 = 22.0f;
-float minTemp[4] = {10.0f, 10.0f, 10.0f, 10.0f};
-float maxTemp[4] = {30.0f, 30.0f, 30.0f, 30.0f};
+
 bool controlEnabled = false;
 
 // Function to render the GUI
@@ -17,8 +16,8 @@ void render_gui() {
     for (int i = 0; i < 4; ++i) {
         ImGui::Text("Device %d", i + 1);
         ImGui::Text("Current Temp: %.1f", i == 0 ? therm_01 : i == 1 ? therm_02 : i == 2 ? therm_03 : therm_04);
-        ImGui::SliderFloat(("Min Temp " + std::to_string(i + 1)).c_str(), &minTemp[i], -50.0f, 50.0f);
-        ImGui::SliderFloat(("Max Temp " + std::to_string(i + 1)).c_str(), &maxTemp[i], -50.0f, 50.0f);
+        ImGui::SliderFloat(("Min Temp " + std::to_string(i + 1)).c_str(), &minTemp[i], -30.0c, 30.0c);
+        ImGui::SliderFloat(("Max Temp " + std::to_string(i + 1)).c_str(), &maxTemp[i], -30.0c, 30.0c);
         ImGui::Separator();
     }
 
