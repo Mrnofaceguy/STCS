@@ -1,88 +1,107 @@
-#include "imgui.h"
-#include <GLFW/glfw3.h>
-#include <GL/glut.h>
-#include <GLFW/glfw3.h>
 #include <iostream>
-#include "implementation/TSL/tsl.c++"
-#include "implementation/TCF/tcf.c++"
-// Simulated device temperatures
+#include <fstream>   
+#include <string>
+#include <random> 
+#include <cstdlib>
+#include <ctime>
+#include <chrono>
+#include <thread>
+#include <iomanip>
 
-bool controlEnabled = false;
+#include "C:\Users\Mrnofaceguy\Documents\GitHub\STCS2\implementation\TCF\tcf.c++"
+// Global variables from other files
+extern int therm_01, therm_02, therm_03, therm_04;
+extern bool htr_01, htr_02, htr_03, htr_04;
+extern int set_01, set_02, set_03, set_04;
+bool auto_control; // Auto control status
 
-// Function to render the GUI
-void render_gui() {
-    ImGui::Begin("Temperature Control System");
-    int minTemp,maxTemp;
-    for (int i = 0; i < 4; ++i) {
-        ImGui::Text("Device %d", i + 1);
-        ImGui::Text("Current Temp: %.1f", i == 0 ? therm_01 : i == 1 ? therm_02 : i == 2 ? therm_03 : therm_04);
-        ImGui::SliderInt(("Min Temp " + std::to_string(i + 1)).c_str(), &minTemp[i], -30, 30);
-        ImGui::SliderInt(("Max Temp " + std::to_string(i + 1)).c_str(), &maxTemp[i], -30, 30);
-        ImGui::Separator();
-    }
-
-    if (ImGui::Button(controlEnabled ? "Stop Control" : "Start Control")) {
-        controlEnabled = !controlEnabled;
-    }
-
-    ImGui::End();
+void displayStatus() {
+    std::cout << "\n--- System Status ---\n";
+    std::cout << "Temperature Sensors:\n";
+    std::cout << "Sensor 1: " << therm_01 << "°C\n";
+    std::cout << "Sensor 2: " << therm_02 << "°C\n";
+    std::cout << "Sensor 3: " << therm_03 << "°C\n";
+    std::cout << "Sensor 4: " << therm_04 << "°C\n";
+    std::cout << "Heater Status:\n";
+    std::cout << "Heater 1: " << (htr_01 ? "ON" : "OFF") << "\n";
+    std::cout << "Heater 2: " << (htr_02 ? "ON" : "OFF") << "\n";
+    std::cout << "Heater 3: " << (htr_03 ? "ON" : "OFF") << "\n";
+    std::cout << "Heater 4: " << (htr_04 ? "ON" : "OFF") << "\n";
+    std::cout << "Auto Control: " << (auto_control ? "Enabled" : "Disabled") << "\n";
 }
 
-int main() {
-    // Initialize GLFW
-    if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
-        return -1;
+void toggleAutoControl() {
+    auto_control = !auto_control;
+    std::cout << "Auto control " << (auto_control ? "enabled." : "disabled.") << "\n";
+}
+
+void manualControl() {
+    int heater, action;
+    std::cout << "Enter heater number (1-4) to override: ";
+    std::cin >> heater;
+    std::cout << "Enter action (1 to turn ON, 0 to turn OFF): ";
+    std::cin >> action;
+
+    switch (heater) {
+        case 1: htr_01 = action; break;
+        case 2: htr_02 = action; break;
+        case 3: htr_03 = action; break;
+        case 4: htr_04 = action; break;
+        default: std::cout << "Invalid heater number\n"; return;
     }
+    std::cout << "Heater " << heater << (action ? " turned ON.\n" : " turned OFF.\n");
+}
 
-    // Set up OpenGL context and window
-    const char* glsl_version = "#version 130";
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Temperature Control GUI", NULL, NULL);
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
+void setTemperatureLimits() {
+    int sensor, min_temp, max_temp;
+    std::cout << "Enter sensor number (1-4) to set limits: ";
+    std::cin >> sensor;
+    std::cout << "Enter minimum temperature: ";
+    std::cin >> min_temp;
+    std::cout << "Enter maximum temperature: ";
+    std::cin >> max_temp;
 
-    // Initialize ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-
-    // Set up Dear ImGui style
-    ImGui::StyleColorsDark();
-
-    // Initialize ImGui for GLFW and OpenGL
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init(glsl_version);
-
-    // Main loop
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-
-        // Start the ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        // Render the GUI
-        render_gui();
-
-        // Rendering
-        ImGui::Render();
-        int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
-        glViewport(0, 0, display_w, display_h);
-        glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        glfwSwapBuffers(window);
+    switch (sensor) {
+        case 1: set_01 = max_temp; break;
+        case 2: set_02 = max_temp; break;
+        case 3: set_03 = max_temp; break;
+        case 4: set_04 = max_temp; break;
+        default: std::cout << "Invalid sensor number\n"; return;
     }
+    std::cout << "Limits for Sensor " << sensor << " set. Min: " << min_temp << " Max: " << max_temp << "\n";
+}
 
-    // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-    glfwDestroyWindow(window);
-    glfwTerminate();
+void menu() {
+    int choice;
+    while (true) {
+        std::cout << "\n--- Menu ---\n";
+        std::cout << "1. Display Status\n";
+        std::cout << "2. Toggle Auto Control\n";
+        std::cout << "3. Manual Heater Control\n";
+        std::cout << "4. Set Temperature Limits\n";
+        std::cout << "5. Exit\n";
+        std::cout << "Enter your choice: ";
+        std::cin >> choice;
 
-    return 0;
+        switch (choice) {
+            case 1: displayStatus(); break;
+            case 2: toggleAutoControl(); break;
+            case 3: manualControl(); break;
+            case 4: setTemperatureLimits(); break;
+            case 5: return; // Exit the menu
+            default: std::cout << "Invalid choice, try again.\n"; break;
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1)); // For smooth loop
+    }
+}
+
+
+
+int main(){
+    std::thread t1(control); 
+    std::thread t2(inicialize); 
+    std::thread t3(menu); 
+    t1.join();
+    t2.join();
+    t3.join();
 }

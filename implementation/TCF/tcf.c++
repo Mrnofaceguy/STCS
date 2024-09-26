@@ -7,7 +7,7 @@
 #include <chrono>
 #include <thread>
 #include <iomanip>
-#include "implementation/TSL/tsl.c++"
+#include "C:\Users\Mrnofaceguy\Documents\GitHub\STCS2\implementation\TSL\tsl.c++"
 
 int frequency=5;
 int Kp;
@@ -49,7 +49,7 @@ void control(){
         this_thread::sleep_for(interval);
     }
 }
-
+/*
 int main(){
     std::thread t1(control); // Start function1 in a separate thread
     std::thread t2(inicialize); // Start function2 in a separate thread
@@ -61,3 +61,4 @@ int main(){
     
 
 }
+*/

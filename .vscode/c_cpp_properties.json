@@ -1,17 +1,16 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "windows-gcc-x64",
             "includePath": [
-                "${default}",
-                "${workspaceFolder}",
-                "/home/vboxuser/Desktop/STCS/implementation/TSL"
+                "${workspaceFolder}/**",
+                "C:\\Qt\\6.7.2\\mingw_64\\include"
             ],
             "defines": [],
-            "compilerPath": "/usr/bin/gcc",
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "linux-gcc-x64"
+            "compilerPath": "C:/Program Files/Haskell Platform/8.4.2/mingw/bin/gcc.exe",
+            "cStandard": "${default}",
+            "cppStandard": "${default}",
+            "intelliSenseMode": "windows-gcc-x64"
         }
     ],
     "version": 4
