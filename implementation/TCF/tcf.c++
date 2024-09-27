@@ -13,7 +13,7 @@
 extern int frequency;  // This should match the definition in vui.c++
 
 // Control running state
-bool control_running = true;  // Flag to control the control thread
+extern bool control_running;  // Flag to control the control thread
 
 int Kp;
 int Ki;

@@ -8,6 +8,7 @@
 bool auto_control = true;       // Controls whether the heating is automatic
 int frequency = 5;              // Default frequency for control logic
 int update_frequency = 5;       // Display update frequency
+bool control_running = true;     // Flag to control the control loop
 
 #ifdef _WIN32
     #define CLEAR_SCREEN "cls"
@@ -44,7 +45,7 @@ void displayStatus() {
 
 // Function to run temperature updates in the background
 void updateTemperatures() {
-    while (true) {
+    while (control_running) {  // Only run while control_running is true
         check_period();  // Check the current period
         cycle();  // Call the cycle function from tcf.c++
         std::this_thread::sleep_for(std::chrono::milliseconds(1000 / frequency));  // Update at the specified frequency
