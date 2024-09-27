@@ -1,27 +1,19 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#include <atomic>
-#include <mutex>
 #include <cstdlib>
-#include <conio.h>  // For _kbhit() and _getch() on Windows
+#include "C:\\Users\\Mrnofaceguy\\Documents\\GitHub\\STCS2\\implementation\\TCF\\tcf.c++"  // Include tcf.c++
+
+// Global variables for auto control and update frequency
+bool auto_control = true;       // Controls whether the heating is automatic
+int frequency = 5;              // Default frequency for control logic
+int update_frequency = 5;       // Display update frequency
 
 #ifdef _WIN32
     #define CLEAR_SCREEN "cls"
 #else
     #define CLEAR_SCREEN "clear"
 #endif
-
-// Global Variables
-int therm_01 = 25, therm_02 = 30, therm_03 = 20, therm_04 = 35;
-bool htr_01 = false, htr_02 = false, htr_03 = false, htr_04 = false;
-bool auto_control = true;
-int set_01 = 28, set_02 = 32, set_03 = 22, set_04 = 36;
-std::atomic<int> update_frequency(5); // Default frequency 5 Hz
-std::atomic<bool> exit_program(false); // To control program termination
-std::atomic<bool> displaying_menu(false); // To avoid input during display
-
-std::mutex mtx;
 
 // Function to clear the terminal screen
 void clearScreen() {
@@ -30,7 +22,6 @@ void clearScreen() {
 
 // Function to display the system status (temperature, heaters, auto control)
 void displayStatus() {
-    std::lock_guard<std::mutex> lock(mtx);  // Ensure thread-safe access
     std::cout << "\n--- System Status ---\n";
     std::cout << "Temperature Sensors:\n";
     std::cout << "Sensor 1: " << therm_01 << "°C\n";
@@ -43,154 +34,144 @@ void displayStatus() {
     std::cout << "Heater 3: " << (htr_03 ? "ON" : "OFF") << "\n";
     std::cout << "Heater 4: " << (htr_04 ? "ON" : "OFF") << "\n";
     std::cout << "Auto Control: " << (auto_control ? "Enabled" : "Disabled") << "\n";
-    std::cout << "Update Frequency: " << update_frequency.load() << " Hz\n";
+    std::cout << "Update Frequency: " << update_frequency << " Hz\n";
+    std::cout << "Target Temperatures:\n";
+    std::cout << "Target 1: " << set_01 << "°C\n";
+    std::cout << "Target 2: " << set_02 << "°C\n";
+    std::cout << "Target 3: " << set_03 << "°C\n";
+    std::cout << "Target 4: " << set_04 << "°C\n";
 }
 
-// Function to simulate temperature updates and auto control
+// Function to run temperature updates in the background
 void updateTemperatures() {
-    while (!exit_program.load()) {
-        {
-            std::lock_guard<std::mutex> lock(mtx);
-            // Simulate temperature changes
-            therm_01 += (rand() % 3 - 1);
-            therm_02 += (rand() % 3 - 1);
-            therm_03 += (rand() % 3 - 1);
-            therm_04 += (rand() % 3 - 1);
-            
-            // Auto-control logic (e.g., turning heaters on or off based on temperature)
-            if (auto_control) {
-                htr_01 = therm_01 < set_01;
-                htr_02 = therm_02 < set_02;
-                htr_03 = therm_03 < set_03;
-                htr_04 = therm_04 < set_04;
-            }
-        }
-
-        // Sleep for the current update frequency
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / update_frequency.load()));
+    while (true) {
+        check_period();  // Check the current period
+        cycle();  // Call the cycle function from tcf.c++
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / frequency));  // Update at the specified frequency
     }
 }
 
-// Function to adjust update frequency based on user input
-void changeFrequency() {
-    std::cout << "Enter new update frequency (Hz): ";
-    int freq;
-    std::cin >> freq;
+// Function to display temperatures live for 2 seconds
+void showTemperaturesForTwoSeconds() {
+    auto start = std::chrono::high_resolution_clock::now();
 
-    if (freq > 0) {
-        update_frequency.store(freq);
-        std::cout << "Update frequency set to " << freq << " Hz.\n";
-    } else {
-        std::cout << "Invalid frequency value. Please enter a positive number.\n";
+    while (true) {
+        clearScreen();  // Clear the screen before each display
+        displayStatus();  // Show the current status
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000 / update_frequency));  // Refresh at the update frequency
+
+        // Check if 2 seconds have passed
+        auto now = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = now - start;
+        if (elapsed.count() >= 2.0) {
+            break;  // Exit loop after 2 seconds
+        }
     }
 }
 
 // Function to toggle auto control
 void toggleAutoControl() {
-    std::lock_guard<std::mutex> lock(mtx);
-    auto_control = !auto_control;
+    auto_control = !auto_control;  // Toggle the auto control state
     std::cout << "Auto control " << (auto_control ? "enabled." : "disabled.") << "\n";
 }
 
-// Manual control of heaters
-void manualControl() {
-    int heater, action;
-    std::cout << "Enter heater number (1-4) to override: ";
-    std::cin >> heater;
-    std::cout << "Enter action (1 to turn ON, 0 to turn OFF): ";
-    std::cin >> action;
+// Function to set update frequency
+void setUpdateFrequency() {
+    int new_frequency;
+    std::cout << "Enter the new update frequency for control (Hz): ";
+    std::cin >> new_frequency;
 
-    std::lock_guard<std::mutex> lock(mtx);
-    switch (heater) {
-        case 1: htr_01 = action; break;
-        case 2: htr_02 = action; break;
-        case 3: htr_03 = action; break;
-        case 4: htr_04 = action; break;
-        default: std::cout << "Invalid heater number\n"; return;
+    // Validate the input frequency (for example, between 1 Hz and 10 Hz)
+    if (new_frequency >= 1 && new_frequency <= 10) {
+        frequency = new_frequency; // Update the frequency variable in tcf.c++
+        std::cout << "Control update frequency set to " << frequency << " Hz.\n";
+    } else {
+        std::cout << "Invalid frequency. Please enter a value between 1 and 10 Hz.\n";
     }
-    std::cout << "Heater " << heater << (action ? " turned ON.\n" : " turned OFF.\n");
 }
 
-// Function to set temperature limits
-void setTemperatureLimits() {
-    int sensor, min_temp, max_temp;
-    std::cout << "Enter sensor number (1-4) to set limits: ";
-    std::cin >> sensor;
-    std::cout << "Enter minimum temperature: ";
-    std::cin >> min_temp;
-    std::cout << "Enter maximum temperature: ";
-    std::cin >> max_temp;
+// Function to set target temperatures
+void setTargetTemperatures() {
+    std::cout << "Enter target temperature for Sensor 1 (-20 to 20): ";
+    std::cin >> set_01;
 
-    std::lock_guard<std::mutex> lock(mtx);
-    switch (sensor) {
-        case 1: set_01 = max_temp; break;
-        case 2: set_02 = max_temp; break;
-        case 3: set_03 = max_temp; break;
-        case 4: set_04 = max_temp; break;
-        default: std::cout << "Invalid sensor number\n"; return;
-    }
-    std::cout << "Limits for Sensor " << sensor << " set. Min: " << min_temp << " Max: " << max_temp << "\n";
-}
+    std::cout << "Enter target temperature for Sensor 2 (-20 to 20): ";
+    std::cin >> set_02;
 
-// Function for live temperature display
-void temperatureDisplay() {
-    while (!exit_program.load()) {
-        if (!displaying_menu.load()) {
-            clearScreen();  // Clear the screen before each display
-            displayStatus();  // Show the current status
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000 / update_frequency.load()));  // Sleep based on update frequency
-        }
+    std::cout << "Enter target temperature for Sensor 3 (-20 to 20): ";
+    std::cin >> set_03;
+
+    std::cout << "Enter target temperature for Sensor 4 (-20 to 20): ";
+    std::cin >> set_04;
+
+    // Validate the input temperatures
+    if (set_01 < -20 || set_01 > 20 || 
+        set_02 < -20 || set_02 > 20 || 
+        set_03 < -20 || set_03 > 20 || 
+        set_04 < -20 || set_04 > 20) {
+        std::cout << "Invalid target temperatures. They must be between -20 and 20 degrees.\n";
+    } else {
+        std::cout << "Target temperatures set to:\n";
+        std::cout << "Sensor 1: " << set_01 << "°C\n";
+        std::cout << "Sensor 2: " << set_02 << "°C\n";
+        std::cout << "Sensor 3: " << set_03 << "°C\n";
+        std::cout << "Sensor 4: " << set_04 << "°C\n";
     }
 }
 
 // Main function for user interaction
 void menu() {
-    while (!exit_program.load()) {
-        if (_kbhit()) {
-            int choice = _getch();
-            displaying_menu.store(true);  // Stop updating the display during menu interaction
-            clearScreen();  // Clear the screen before handling input
+    while (true) {
+        int choice;
+        std::cout << "\n--- Menu ---\n";
+        std::cout << "1. Display Live Temperatures for 2 Seconds\n";
+        std::cout << "2. Toggle Auto Control\n";
+        std::cout << "3. Set Update Frequency\n";
+        std::cout << "4. Set Target Temperatures\n";  // New option to set target temperatures
+        std::cout << "5. Exit\n";
+        std::cout << "Enter your choice: ";
+        std::cin >> choice;
 
-            std::cout << "\n--- Menu ---\n";
-            std::cout << "1. Display Status\n";
-            std::cout << "2. Toggle Auto Control\n";
-            std::cout << "3. Manual Heater Control\n";
-            std::cout << "4. Set Temperature Limits\n";
-            std::cout << "5. Change Update Frequency\n";
-            std::cout << "6. Exit\n";
-            std::cout << "Enter your choice: ";
-
-            switch (choice) {
-                case '1': displayStatus(); break;
-                case '2': toggleAutoControl(); break;
-                case '3': manualControl(); break;
-                case '4': setTemperatureLimits(); break;
-                case '5': changeFrequency(); break;
-                case '6': exit_program.store(true); break;
-                default: break; // Ignore invalid keys
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));  // To allow user to read output
-            displaying_menu.store(false);  // Resume updating the display after menu interaction
+        switch (choice) {
+            case 1: 
+                showTemperaturesForTwoSeconds(); 
+                break;
+            case 2: 
+                toggleAutoControl();  // Call the toggle function
+                break;
+            case 3:
+                setUpdateFrequency();  // Call the set frequency function
+                break;
+            case 4:
+                setTargetTemperatures();  // Call the set target temperatures function
+                break;
+            case 5: 
+                std::cout << "Exiting program...\n";
+                control_running = false;  // Set the control flag to false
+                return;  // Exit the menu
+            default: 
+                std::cout << "Invalid choice, try again.\n"; 
+                break;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));  // Rest the CPU
+        std::this_thread::sleep_for(std::chrono::seconds(1));  // Give a slight pause before returning to the menu
     }
 }
 
 int main() {
-    // Start the temperature update thread
+    std::cout << "Initializing system...\n";
+    initializeTemperatures();  // Call the renamed initialize function
+    std::cout << "System initialized.\n";
+
+    // Start the background temperature update thread
     std::thread updateThread(updateTemperatures);
 
-    // Start a separate thread for live temperature display
-    std::thread displayThread(temperatureDisplay);
-
-    // Handle user input asynchronously
+    // Run the main menu for user interaction
     menu();
 
-    // Join threads before exiting
+    // Join the update thread before exiting
     updateThread.join();
-    displayThread.join();
 
     return 0;
 }

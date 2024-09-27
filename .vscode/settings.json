@@ -2,7 +2,8 @@
   "files.associations": {
     "*.embeddedhtml": "html",
     "iomanip": "cpp",
-    "iostream": "cpp"
+    "iostream": "cpp",
+    "chrono": "cpp"
   },
   "C_Cpp.default.includePath": [
     "/home/vboxuser/Desktop/STCS/services"
